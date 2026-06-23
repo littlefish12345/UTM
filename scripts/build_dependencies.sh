@@ -139,6 +139,15 @@ clone () {
         fi
     fi
     git -C "$DIR" checkout "$COMMIT"
+    PATCH="$PATCHES_DIR/$(basename "$REPO" .git).patch"
+    if [ -f "$PATCH" ]; then
+        if git -C "$DIR" apply --reverse --check "$PATCH" 2>/dev/null; then
+            echo "${GREEN}$(basename "$REPO" .git) already patched.${NC}"
+        else
+            echo "${GREEN}Patching $(basename "$REPO" .git)...${NC}"
+            git -C "$DIR" apply "$PATCH"
+        fi
+    fi
 }
 
 download_all () {

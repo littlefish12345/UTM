@@ -1,0 +1,39 @@
+--- a/src/compiler/clc/clc_helpers.cpp
++++ b/src/compiler/clc/clc_helpers.cpp
+@@ -45,6 +45,13 @@
+ #include <llvm-c/Target.h>
+ #include <LLVMSPIRVLib/LLVMSPIRVLib.h>
+ 
++/* Clang 22's <clang/Basic/OffloadArch.h> (pulled in transitively below via
++ * CodeGenAction.h) declares an enumerator named UNUSED, which collides with the
++ * UNUSED function-attribute macro from util/macros.h (included transitively via
++ * util/ralloc.h / util/set.h above). Temporarily hide the macro across the clang
++ * headers, then restore it. */
++#pragma push_macro("UNUSED")
++#undef UNUSED
+ #include <clang/Config/config.h>
+ #include <clang/Driver/Driver.h>
+ #include <clang/CodeGen/CodeGenAction.h>
+@@ -54,6 +61,11 @@
+ #include <clang/Frontend/TextDiagnosticPrinter.h>
+ #include <clang/Frontend/Utils.h>
+ #include <clang/Basic/TargetInfo.h>
++#if LLVM_VERSION_MAJOR >= 22
++/* GetResourcesPath moved out of clang::driver::Driver into a free function. */
++#include <clang/Options/OptionUtils.h>
++#endif
++#pragma pop_macro("UNUSED")
+ 
+ #include <spirv-tools/libspirv.h>
+ #include <spirv-tools/libspirv.hpp>
+@@ -915,7 +927,9 @@
+    // GetResourcePath is a way to retrieve the actual libclang resource dir based on a given binary
+    // or library.
+    auto tmp_res_path =
+-#if LLVM_VERSION_MAJOR >= 20
++#if LLVM_VERSION_MAJOR >= 22
++      clang::GetResourcesPath(std::string(clang_path));
++#elif LLVM_VERSION_MAJOR >= 20
+       Driver::GetResourcesPath(std::string(clang_path));
+ #else
+       Driver::GetResourcesPath(std::string(clang_path), CLANG_RESOURCE_DIR);
