@@ -256,6 +256,12 @@ jobs:
     name: Package iOS (unsigned IPA)
     runs-on: ${{ fromJSON(needs.configuration.outputs.github-runner) }}
     needs: [configuration, build-utm]
+    strategy:
+      matrix:
+        configuration: [
+          {mode: "ipa", artifact: "UTM-ipa-unsigned"},
+          {mode: "ipa-hv", artifact: "UTM-HV-ipa-unsigned"},
+        ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -268,11 +274,11 @@ jobs:
       - name: Package unsigned IPA
         run: |
           tar -xf UTM.xcarchive.tgz
-          ./scripts/package.sh ipa UTM.xcarchive .
+          ./scripts/package.sh ${{ matrix.configuration.mode }} UTM.xcarchive .
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: UTM-ipa-unsigned
+          name: ${{ matrix.configuration.artifact }}
           path: UTM.ipa
   package-ios:
     name: Package (iOS)
